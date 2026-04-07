@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowRight,
   BriefcaseBusiness,
+  FileText,
   LayoutDashboard,
   UserRound,
   Waves,
@@ -22,8 +23,13 @@ interface NavbarProps {
 const navItems = [
   {
     href: "/discover",
-    label: "Dashboard",
+    label: "Discover",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/intel",
+    label: "Intel",
+    icon: FileText,
   },
   {
     href: "/career-fair",
