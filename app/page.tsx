@@ -30,10 +30,27 @@ const featureCards = [
   },
 ];
 
+const discoveryPoints = [
+  {
+    title: "Resume-matched roles",
+    description:
+      "Signal scans your resume and returns roles where your experience is a genuine fit.",
+  },
+  {
+    title: "Live postings only",
+    description: "No stale listings. Signal searches for active openings in real time.",
+  },
+  {
+    title: "One click to prep",
+    description:
+      "Find a role you like? Generate a full company intel brief instantly.",
+  },
+];
+
 const steps = [
   "Upload your resume",
-  "Discover roles that fit your profile",
-  "Generate a brief and walk in prepared",
+  "Find matched internships",
+  "Generate your intel brief",
 ];
 
 export default async function Home() {
@@ -57,15 +74,15 @@ export default async function Home() {
 
           <div className="relative mx-auto grid max-w-[1280px] gap-14 px-6 py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)] lg:items-center lg:px-10 lg:py-24">
             <div className="max-w-3xl">
-              <Badge>Interview prep, not busywork</Badge>
+              <Badge>Internship discovery + interview prep</Badge>
               <h1 className="signal-display mt-6 text-[clamp(3.5rem,8vw,6.4rem)]">
-                Stop Researching.
+                Stop Scrolling LinkedIn.
                 <br />
-                Start Preparing.
+                Find Roles That Actually Fit.
               </h1>
               <p className="signal-copy mt-6 max-w-2xl text-base sm:text-lg">
-                Signal gives you a personalized company intel brief in under 60
-                seconds - built around your resume.
+                Signal matches internships to your resume, then preps you for
+                every company in under 60 seconds.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -135,6 +152,45 @@ export default async function Home() {
                   Signal turns scattered research into one clear interview game plan.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b border-border">
+          <div className="mx-auto max-w-[1280px] px-6 py-16 lg:px-10 lg:py-20">
+            <div className="max-w-3xl">
+              <p className="signal-eyebrow">Internship discovery</p>
+              <h2 className="signal-title mt-4 text-[clamp(2.4rem,5vw,4rem)]">
+                Stop Scrolling. Start Matching.
+              </h2>
+              <p className="signal-copy mt-5 max-w-2xl text-sm sm:text-base">
+                Signal reads your resume and finds internships that actually
+                match your background - not just your major.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-4 lg:grid-cols-3">
+              {discoveryPoints.map((point) => (
+                <article
+                  key={point.title}
+                  className="rounded-[26px] border border-border bg-white/62 p-6 backdrop-blur-sm sm:p-7"
+                >
+                  <div className="signal-eyebrow">Match point</div>
+                  <h3 className="signal-title mt-6 text-2xl">{point.title}</h3>
+                  <p className="signal-copy mt-4 text-sm sm:text-base">
+                    {point.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-8 flex justify-start">
+              <Button asChild size="lg" className="min-w-[200px]">
+                <Link href="/explore">
+                  Find Your Internship
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           </div>
         </section>
