@@ -66,6 +66,7 @@ const stringListSchema = z.array(z.string().trim().min(1));
 
 const companyResearchSchema = z.object({
   company_overview: z.object({
+    official_company_name: z.string().trim().min(1),
     description: z.string(),
     industry: z.string(),
     headquarters: z.string(),
@@ -161,6 +162,7 @@ const companyResearchJsonSchema = {
       type: "object",
       additionalProperties: false,
       required: [
+        "official_company_name",
         "description",
         "industry",
         "headquarters",
@@ -170,6 +172,7 @@ const companyResearchJsonSchema = {
         "stock_ticker",
       ],
       properties: {
+        official_company_name: { type: "string" },
         description: { type: "string" },
         industry: { type: "string" },
         headquarters: { type: "string" },
@@ -935,6 +938,7 @@ function buildCompanyResearchContext(
     .join("\n");
 
   return `Company: ${companyName}
+Official company name: ${companyResearch.company_overview.official_company_name}
 What they do: ${companyResearch.company_overview.description}
 Industry position: ${companyResearch.company_overview.industry}
 Headquarters: ${companyResearch.company_overview.headquarters}
@@ -995,6 +999,7 @@ function buildCompanyResearchUserPrompt(companyName: string, retry = false) {
   return `Research "${companyName}" for a student recruiting brief.
 
 You must verify:
+- the correct official company name, even if the user input is misspelled or shorthand
 - what the company actually does
 - how big it is and where it sits in the market
 - what they care about right now, based on recent news or initiatives
@@ -1831,6 +1836,10 @@ export async function generateSignalBrief(
 
   return {
     ...brief,
+    company_overview: {
+      ...brief.company_overview,
+      official_company_name: companyResearch.company_overview.official_company_name,
+    },
     positioning_strategy: {
       ...brief.positioning_strategy,
       one_line_pitch: enforceStudentIdentityInIntro(

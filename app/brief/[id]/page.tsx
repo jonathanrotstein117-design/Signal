@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import {
   normalizeBriefRecord,
+  resolveBriefCompanyName,
   type BriefRecord,
   type ProfileRecord,
 } from "@/lib/types";
@@ -43,6 +44,7 @@ export default async function BriefPage({
   }
 
   const brief = normalizeBriefRecord(data as BriefRecord);
+  const briefTitle = resolveBriefCompanyName(brief.brief_data, brief.company_name);
   let hasResume = false;
 
   const { data: profileData, error: profileError } = await supabase
@@ -81,7 +83,7 @@ export default async function BriefPage({
               </Badge>
             </div>
             <h1 className="signal-display mt-5 text-[clamp(2.8rem,6vw,4.8rem)]">
-              {brief.company_name}
+              {briefTitle}
             </h1>
             <p className="signal-copy mt-5 max-w-2xl text-lg">
               {brief.brief_data.company_overview.description}
@@ -89,7 +91,7 @@ export default async function BriefPage({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <RegenerateButton companyName={brief.company_name} briefId={brief.id} />
+            <RegenerateButton companyName={briefTitle} briefId={brief.id} />
           </div>
         </section>
 

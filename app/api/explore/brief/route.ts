@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { generateSignalBrief, getOpenAIErrorMessage } from "@/lib/openai";
 import { getProfileByUserId } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
-import { briefRequestSchema, type ProfileRecord } from "@/lib/types";
+import {
+  briefRequestSchema,
+  resolveBriefCompanyName,
+  type ProfileRecord,
+} from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -38,10 +42,14 @@ export async function POST(request: Request) {
     }
 
     const brief = await generateSignalBrief(parsedBody.data.companyName, profile);
+    const resolvedCompanyName = resolveBriefCompanyName(
+      brief,
+      parsedBody.data.companyName,
+    );
 
     return NextResponse.json({
       brief,
-      companyName: parsedBody.data.companyName,
+      companyName: resolvedCompanyName,
     });
   } catch (error) {
     const normalized = getOpenAIErrorMessage(error);

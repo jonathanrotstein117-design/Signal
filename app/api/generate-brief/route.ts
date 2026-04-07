@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { generateSignalBrief, getOpenAIErrorMessage } from "@/lib/openai";
 import { getProfileByUserId } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
-import { briefRequestSchema, type ProfileRecord } from "@/lib/types";
+import {
+  briefRequestSchema,
+  resolveBriefCompanyName,
+  type ProfileRecord,
+} from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -43,11 +47,15 @@ export async function POST(request: Request) {
     }
 
     const brief = await generateSignalBrief(parsedBody.data.companyName, profile);
+    const resolvedCompanyName = resolveBriefCompanyName(
+      brief,
+      parsedBody.data.companyName,
+    );
 
     const timestamp = new Date().toISOString();
     const insertPayload = {
       user_id: user.id,
-      company_name: parsedBody.data.companyName,
+      company_name: resolvedCompanyName,
       brief_data: brief,
       created_at: timestamp,
     } as never;
@@ -71,7 +79,7 @@ export async function POST(request: Request) {
         .from("briefs")
         .update({
           brief_data: brief,
-          company_name: parsedBody.data.companyName,
+          company_name: resolvedCompanyName,
           created_at: timestamp,
         } as never)
         .eq("id", parsedBody.data.briefId)

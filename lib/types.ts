@@ -53,6 +53,7 @@ export type RoleSearchRequest = z.infer<typeof roleSearchRequestSchema>;
 
 export const signalBriefSchema = z.object({
   company_overview: z.object({
+    official_company_name: z.string().trim().min(1).default("Could not verify"),
     description: z.string(),
     industry: z.string(),
     headquarters: z.string(),
@@ -411,6 +412,7 @@ function normalizeLegacyBrief(brief: LegacySignalBrief): SignalBrief {
 
   return {
     company_overview: {
+      official_company_name: "Could not verify",
       description: brief.company_overview.description,
       industry: brief.company_overview.industry,
       headquarters: brief.company_overview.headquarters,
@@ -486,6 +488,7 @@ export function normalizeSignalBrief(input: unknown): SignalBrief {
 
   return {
     company_overview: {
+      official_company_name: "Could not verify",
       description: "Could not verify the company overview from the saved brief.",
       industry: "Unknown",
       headquarters: "Could not verify",
@@ -545,6 +548,20 @@ export function normalizeBriefRecord(brief: BriefRecord): NormalizedBriefRecord 
     ...brief,
     brief_data: normalizeSignalBrief(brief.brief_data),
   };
+}
+
+export function resolveBriefCompanyName(
+  brief: SignalBrief,
+  fallbackCompanyName: string,
+) {
+  const officialCompanyName = brief.company_overview.official_company_name.trim();
+
+  if (officialCompanyName && officialCompanyName !== "Could not verify") {
+    return officialCompanyName;
+  }
+
+  const fallback = fallbackCompanyName.trim();
+  return fallback || "Unknown company";
 }
 
 export function normalizeCareerFairCompanies(input: unknown): CareerFairCompany[] {

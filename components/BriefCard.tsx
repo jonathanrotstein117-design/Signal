@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { NormalizedBriefRecord } from "@/lib/types";
+import { resolveBriefCompanyName, type NormalizedBriefRecord } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 interface BriefCardProps {
@@ -11,6 +11,8 @@ interface BriefCardProps {
 }
 
 export function BriefCard({ brief }: BriefCardProps) {
+  const companyName = resolveBriefCompanyName(brief.brief_data, brief.company_name);
+
   return (
     <Link href={`/brief/${brief.id}`} className="group block">
       <Card className="h-full transition-transform group-hover:-translate-y-1">
@@ -21,7 +23,7 @@ export function BriefCard({ brief }: BriefCardProps) {
                 {formatDate(brief.created_at)}
               </p>
               <h3 className="signal-title mt-2 text-2xl text-foreground">
-                {brief.company_name}
+                {companyName}
               </h3>
             </div>
             <ArrowUpRight className="h-5 w-5 text-secondary transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground" />
