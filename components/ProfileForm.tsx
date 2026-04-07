@@ -46,7 +46,7 @@ export function ProfileForm({
 
   const [formData, setFormData] = useState({
     full_name: initialProfile?.full_name ?? "",
-    university: initialProfile?.university ?? "Rutgers University",
+    university: initialProfile?.university ?? "",
     major: initialProfile?.major ?? "",
     minor: initialProfile?.minor ?? "",
     double_major: initialProfile?.double_major ?? "",
@@ -88,7 +88,7 @@ export function ProfileForm({
     try {
       const profilePayload: Record<string, string | number | null> = {
         full_name: toNullableValue(formData.full_name),
-        university: toNullableValue(formData.university) ?? "Rutgers University",
+        university: toNullableValue(formData.university),
         major: toNullableValue(formData.major),
         graduation_year: formData.graduation_year
           ? Number(formData.graduation_year)

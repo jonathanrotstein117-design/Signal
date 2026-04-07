@@ -62,6 +62,7 @@ export default async function CareerFairPage({
         <CareerFairWorkspace
           initialFair={initialFair}
           hasResume={hasResume}
+          userId={user.id}
           universityName={profile?.university ?? null}
           initialLoadError={loadError}
         />

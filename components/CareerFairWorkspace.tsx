@@ -41,6 +41,7 @@ import { cn, formatDate } from "@/lib/utils";
 interface CareerFairWorkspaceProps {
   initialFair: NormalizedCareerFairRecord | null;
   hasResume: boolean;
+  userId: string;
   universityName: string | null;
   initialLoadError?: string | null;
 }
@@ -588,10 +589,12 @@ function PocketBriefDeck({
 export function CareerFairWorkspace({
   initialFair,
   hasResume,
+  userId,
   universityName,
   initialLoadError,
 }: CareerFairWorkspaceProps) {
   const [currentFair, setCurrentFair] = useState(initialFair);
+  const [savedUniversityName, setSavedUniversityName] = useState(universityName);
   const [composerMode, setComposerMode] = useState<"new" | "append" | null>(
     initialFair ? null : "new",
   );
@@ -619,6 +622,10 @@ export function CareerFairWorkspace({
     ? currentFair.companies.filter((company) => company.status === "error")
     : [];
   const showManualSetup = !currentFair || composerMode === "new";
+
+  useEffect(() => {
+    setSavedUniversityName(universityName);
+  }, [universityName]);
 
   useEffect(() => {
     if (!activeFairId || (status !== "processing" && status !== "pending")) {
@@ -793,7 +800,9 @@ export function CareerFairWorkspace({
   return (
     <div className="space-y-8">
       <CareerFairDiscoverySection
-        universityName={universityName}
+        userId={userId}
+        universityName={savedUniversityName}
+        onUniversitySaved={setSavedUniversityName}
         onUseFair={handleUseDiscoveredFair}
       />
 

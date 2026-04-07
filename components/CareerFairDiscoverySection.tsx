@@ -2,18 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ExternalLink, LoaderCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { createClient } from "@/lib/supabase/client";
 import type { CareerFairDiscoveryFair } from "@/lib/types";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
 
 interface CareerFairDiscoverySectionProps {
+  userId: string;
   universityName: string | null;
+  onUniversitySaved: (universityName: string) => void;
   onUseFair: (fair: CareerFairDiscoveryFair) => void;
 }
 
@@ -23,12 +28,22 @@ interface CachedDiscoveryPayload {
 }
 
 export function CareerFairDiscoverySection({
+  userId,
   universityName,
+  onUniversitySaved,
   onUseFair,
 }: CareerFairDiscoverySectionProps) {
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [fairs, setFairs] = useState<CareerFairDiscoveryFair[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(universityName));
   const [error, setError] = useState<string | null>(null);
+  const [draftUniversityName, setDraftUniversityName] = useState(universityName ?? "");
+  const [isSavingUniversity, setIsSavingUniversity] = useState(false);
+
+  useEffect(() => {
+    setDraftUniversityName(universityName ?? "");
+  }, [universityName]);
 
   const cacheKey = useMemo(() => {
     const normalizedUniversity = universityName?.trim().toLocaleLowerCase();
@@ -118,6 +133,44 @@ export function CareerFairDiscoverySection({
     };
   }, [cacheKey, universityName]);
 
+  const handleSaveUniversity = async () => {
+    const normalizedUniversityName = draftUniversityName.trim();
+
+    if (!normalizedUniversityName) {
+      toast.error("Enter your university first.");
+      return;
+    }
+
+    setIsSavingUniversity(true);
+
+    try {
+      const { error: saveError } = await supabase
+        .from("profiles" as never)
+        .upsert({
+          id: userId,
+          university: normalizedUniversityName,
+          updated_at: new Date().toISOString(),
+        } as never);
+
+      if (saveError) {
+        throw saveError;
+      }
+
+      onUniversitySaved(normalizedUniversityName);
+      setError(null);
+      toast.success("University saved");
+      router.refresh();
+    } catch (saveError) {
+      toast.error(
+        saveError instanceof Error
+          ? saveError.message
+          : "Signal could not save your university yet.",
+      );
+    } finally {
+      setIsSavingUniversity(false);
+    }
+  };
+
   return (
     <section className="surface-panel rounded-2xl p-6 md:p-8">
       <div className="flex flex-wrap items-center gap-3">
@@ -138,9 +191,41 @@ export function CareerFairDiscoverySection({
       </div>
 
       {!universityName?.trim() ? (
-        <div className="signal-callout-quiet mt-6 rounded-2xl p-5 text-sm text-foreground">
-          Add your university on your profile first so Signal can search for
-          upcoming fairs nearby.
+        <div className="signal-card-soft mt-6 rounded-2xl p-5">
+          <label
+            htmlFor="career-fair-university"
+            className="text-sm font-medium text-foreground"
+          >
+            What school do you go to?
+          </label>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <Input
+              id="career-fair-university"
+              value={draftUniversityName}
+              onChange={(event) => setDraftUniversityName(event.target.value)}
+              placeholder="Rutgers University"
+              className="h-12 rounded-[14px] text-base"
+              disabled={isSavingUniversity}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleSaveUniversity();
+                }
+              }}
+            />
+            <Button
+              onClick={() => void handleSaveUniversity()}
+              disabled={isSavingUniversity || !draftUniversityName.trim()}
+            >
+              {isSavingUniversity ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : null}
+              {isSavingUniversity ? "Saving..." : "Save and Search"}
+            </Button>
+          </div>
+          <p className="mt-3 text-sm text-secondary">
+            We&apos;ll save this to your profile and use it for career fair searches from now on.
+          </p>
         </div>
       ) : null}
 
