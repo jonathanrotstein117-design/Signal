@@ -39,6 +39,49 @@ interface CachedSuggestedPayload {
   categories: SuggestedCategoryView[];
 }
 
+function isPersistableSuggestedCategory(category: SuggestedCategoryView) {
+  return category.status === "ready" || category.status === "empty";
+}
+
+function buildSuggestedCategoryMap(categories: SuggestedCategoryView[]) {
+  return new Map(categories.map((category) => [category.title, category]));
+}
+
+function mergeSuggestedCategoriesForCache(
+  resolvedCategories: SuggestedCategoryView[],
+  previousCategories: SuggestedCategoryView[],
+) {
+  const previousByTitle = buildSuggestedCategoryMap(previousCategories);
+
+  return resolvedCategories.flatMap((category) => {
+    if (isPersistableSuggestedCategory(category)) {
+      return [category];
+    }
+
+    const previous = previousByTitle.get(category.title);
+
+    if (previous && isPersistableSuggestedCategory(previous)) {
+      return [previous];
+    }
+
+    return [];
+  });
+}
+
+function collectPersistableSuggestedCategories(...groups: SuggestedCategoryView[][]) {
+  const collected = new Map<string, SuggestedCategoryView>();
+
+  groups.flat().forEach((category) => {
+    if (!isPersistableSuggestedCategory(category)) {
+      return;
+    }
+
+    collected.set(category.title, category);
+  });
+
+  return Array.from(collected.values());
+}
+
 function isCachedSuggestedPayload(value: unknown): value is CachedSuggestedPayload {
   if (!value || typeof value !== "object") {
     return false;
@@ -290,22 +333,27 @@ export function DiscoverWorkspace({ profile }: DiscoverWorkspaceProps) {
 
     const requestId = suggestedRequestIdRef.current + 1;
     suggestedRequestIdRef.current = requestId;
+    const cachedPayload = readCachedPayload(suggestedCacheKey, isCachedSuggestedPayload);
+    const previousCategories = collectPersistableSuggestedCategories(
+      cachedPayload?.categories ?? [],
+      suggestedCategories,
+    );
+    const previousByTitle = buildSuggestedCategoryMap(previousCategories);
 
     try {
-      if (!forceRefresh) {
-        const cached = readCachedPayload(suggestedCacheKey, isCachedSuggestedPayload);
+      if (!forceRefresh && cachedPayload?.categories.length) {
+        setSuggestedCategories(cachedPayload.categories);
+        setSuggestedError(null);
+        setIsSuggestedLoading(false);
 
-        if (cached && Date.now() - cached.createdAt < CACHE_TTL_MS) {
-          setSuggestedCategories(cached.categories);
-          setSuggestedError(null);
-          setIsSuggestedLoading(false);
+        if (Date.now() - cachedPayload.createdAt < CACHE_TTL_MS) {
           return;
         }
       }
 
       if (forceRefresh) {
         setIsRefreshingSuggestions(true);
-      } else {
+      } else if (!cachedPayload?.categories.length) {
         setIsSuggestedLoading(true);
       }
 
@@ -330,19 +378,22 @@ export function DiscoverWorkspace({ profile }: DiscoverWorkspaceProps) {
       const seeds = payload.categories ?? [];
 
       if (!seeds.length) {
-        setSuggestedCategories([]);
-        setSuggestedError(null);
+        if (!previousCategories.length) {
+          setSuggestedCategories([]);
+          setSuggestedError(null);
+        }
         return;
       }
 
       const loadingCategories: SuggestedCategoryView[] = seeds.map(
         (seed) =>
+          previousByTitle.get(seed.title) ??
           ({
             ...seed,
             roles: [],
             status: "loading",
             message: null,
-          }) satisfies SuggestedCategoryView,
+          } satisfies SuggestedCategoryView),
       );
       const resolvedCategories: SuggestedCategoryView[] = [...loadingCategories];
 
@@ -378,21 +429,28 @@ export function DiscoverWorkspace({ profile }: DiscoverWorkspaceProps) {
         return;
       }
 
-      if (resolvedCategories.every((category) => category.status !== "loading" && category.status !== "error")) {
+      const cacheableCategories = mergeSuggestedCategoriesForCache(
+        resolvedCategories,
+        previousCategories,
+      );
+
+      if (cacheableCategories.length) {
         window.localStorage.setItem(
           suggestedCacheKey,
           JSON.stringify({
             createdAt: Date.now(),
-            categories: resolvedCategories,
+            categories: cacheableCategories,
           } satisfies CachedSuggestedPayload),
         );
       }
     } catch (fetchError) {
-      setSuggestedError(
-        fetchError instanceof Error
-          ? fetchError.message
-          : "Signal could not load personalized role suggestions.",
-      );
+      if (!previousCategories.length) {
+        setSuggestedError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Signal could not load personalized role suggestions.",
+        );
+      }
     } finally {
       if (suggestedRequestIdRef.current === requestId) {
         setIsSuggestedLoading(false);

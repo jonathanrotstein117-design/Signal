@@ -1314,8 +1314,10 @@ function buildSuggestedRolesSystemPrompt() {
 RULES:
 - Never use em dashes. Use commas, periods, semicolons, or colons instead.
 - Infer 3-5 role categories the student should target.
-- Role category titles must be specific, not generic. Good examples: "ESG Advisory Analyst Intern", "Sustainability Data Analyst", "Climate Risk Associate", "Strategy and Analytics Intern".
-- Avoid generic titles like "Business Intern", "Finance Intern", or "Analyst".
+- Role category titles must be search-friendly and commonly used on job boards.
+- Prefer broad but relevant categories such as "Data Analyst Intern", "Business Analyst Intern", "Financial Analyst Intern", "Operations Analyst Intern", "Research Analyst Intern", or "Sustainability Analyst Intern".
+- Use niche modifiers only when the resume clearly supports them and the title is still likely to exist on job boards.
+- Avoid titles that are so narrow they would rarely appear in live postings.
 - Each category reason must be one line under 20 words and must mention a real student signal, such as a skill, project, experience area, major, or interest.
 - Do not search the web. Do not include job postings.
 - Return only valid JSON matching the schema.
@@ -2045,7 +2047,7 @@ export async function discoverSuggestedRoles(
     try {
       const response = await client.responses.create(
         {
-          model: "gpt-4o",
+          model: "gpt-4o-mini",
           input: [
             { role: "system", content: buildSuggestedRolesSystemPrompt() },
             {
