@@ -111,6 +111,11 @@ export async function searchInternshipJobs(input: InternshipSearchRequest) {
     },
   });
 
+  const responseBody = await response.text();
+
+  console.log("[internship-search] JSearch status:", response.status);
+  console.log("[internship-search] JSearch body:", responseBody);
+
   if (!response.ok) {
     throw new InternshipSearchError(
       "Job search is temporarily unavailable. Please try again later.",
@@ -118,7 +123,7 @@ export async function searchInternshipJobs(input: InternshipSearchRequest) {
     );
   }
 
-  const payload = rapidApiSearchResponseSchema.parse(await response.json());
+  const payload = rapidApiSearchResponseSchema.parse(JSON.parse(responseBody));
   const seenLinks = new Set<string>();
   const results: InternshipJob[] = [];
 
