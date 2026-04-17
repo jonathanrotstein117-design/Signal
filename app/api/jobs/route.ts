@@ -41,11 +41,13 @@ async function handleSearch(payload: unknown) {
 }
 
 export async function POST(request: Request) {
+  console.log("[api/jobs] RAPIDAPI_KEY:", process.env.RAPIDAPI_KEY);
   const body = await request.json().catch(() => null);
   return handleSearch(body);
 }
 
 export async function GET(request: Request) {
+  console.log("[api/jobs] RAPIDAPI_KEY:", process.env.RAPIDAPI_KEY);
   const { searchParams } = new URL(request.url);
 
   return handleSearch({
