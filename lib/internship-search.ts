@@ -1,5 +1,6 @@
 import "server-only";
 
+import { Agent, fetch as undiciFetch } from "undici";
 import { z } from "zod";
 
 import {
@@ -10,9 +11,11 @@ import {
   type InternshipSearchRequest,
 } from "@/lib/internship-search-shared";
 
-const JSEARCH_API_URL = "https://jsearch.p.rapidapi.com/search";
-const JSEARCH_API_HOST = "jsearch.p.rapidapi.com";
+const JSEARCH_API_URL = "https://api.openwebninja.com/jsearch/search";
 const INTERNSHIP_PATTERN = /intern/i;
+
+// OpenWeb Ninja's API rejects HTTP/1.1 with 401; force HTTP/2 via undici.
+const h2Dispatcher = new Agent({ allowH2: true });
 
 const rapidApiJobSchema = z.object({
   job_id: z.union([z.string(), z.number()]).optional().nullable(),
@@ -102,24 +105,37 @@ export async function searchInternshipJobs(input: InternshipSearchRequest) {
   upstreamUrl.searchParams.set("num_pages", "1");
   upstreamUrl.searchParams.set("date_posted", "month");
 
-  const response = await fetch(upstreamUrl, {
+  const response = await undiciFetch(upstreamUrl, {
     method: "GET",
-    cache: "no-store",
     headers: {
-      "X-RapidAPI-Host": JSEARCH_API_HOST,
-      "X-RapidAPI-Key": apiKey,
+      "X-API-KEY": apiKey,
     },
+    dispatcher: h2Dispatcher,
   });
 
   const responseBody = await response.text();
 
-  console.log("[internship-search] JSearch status:", response.status);
-  console.log("[internship-search] JSearch body:", responseBody);
-
   if (!response.ok) {
+    const isDev = process.env.NODE_ENV === "development";
+    let devHint = "";
+
+    if (isDev) {
+      if (response.status === 403) {
+        devHint = " (dev: JSearch 403 — RAPIDAPI_KEY account is not subscribed to this API)";
+      } else if (response.status === 429) {
+        devHint = " (dev: JSearch 429 — quota exceeded, wait or upgrade RapidAPI plan)";
+      } else {
+        devHint = ` (dev: JSearch ${response.status})`;
+      }
+    }
+
+    console.error(
+      `[internship-search] JSearch error ${response.status}:`,
+      responseBody.slice(0, 300),
+    );
     throw new InternshipSearchError(
-      "Job search is temporarily unavailable. Please try again later.",
-      response.status,
+      `Job search is temporarily unavailable. Please try again later.${devHint}`,
+      503,
     );
   }
 

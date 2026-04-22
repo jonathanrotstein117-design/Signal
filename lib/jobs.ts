@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { Agent, fetch as undiciFetch } from "undici";
 import { z } from "zod";
 
 import {
@@ -18,7 +19,9 @@ import {
   type RoleSearchRequest,
 } from "@/lib/types";
 
-const JSEARCH_ENDPOINT = "https://jsearch.p.rapidapi.com/search";
+const JSEARCH_ENDPOINT = "https://api.openwebninja.com/jsearch/search";
+// OpenWeb Ninja's API rejects HTTP/1.1 with 401; force HTTP/2 via undici.
+const jsearchDispatcher = new Agent({ allowH2: true });
 const JOB_CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
 const ACTIVE_LINK_PROBE_CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
 const INACTIVE_LINK_PROBE_CACHE_TTL_MS = 30 * 60 * 1_000;
@@ -2140,13 +2143,12 @@ async function fetchJSearchResults(options: JSearchSearchOptions): Promise<RoleP
     params.set("company_types", companyType);
   }
 
-  const response = await fetch(`${JSEARCH_ENDPOINT}?${params.toString()}`, {
+  const response = await undiciFetch(`${JSEARCH_ENDPOINT}?${params.toString()}`, {
     method: "GET",
     headers: {
-      "x-rapidapi-key": apiKey,
-      "x-rapidapi-host": "jsearch.p.rapidapi.com",
+      "X-API-KEY": apiKey,
     },
-    cache: "no-store",
+    dispatcher: jsearchDispatcher,
   });
 
   if (response.status === 429) {
